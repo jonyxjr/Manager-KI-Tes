@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Ritter Manager KI</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #111;
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+        }
+
+        .card {
+            background: #1c1c1c;
+            border: 1px solid #333;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        .description {
+            color: #aaa;
+            margin-bottom: 25px;
+        }
+
+        .input-area {
+            display: flex;
+            gap: 10px;
+        }
+
+        #input {
+            flex: 1;
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid #444;
+            background: #111;
+            color: white;
+            font-size: 16px;
+            outline: none;
+        }
+
+        #input:focus {
+            border-color: #777;
+        }
+
+        button {
+            padding: 15px 22px;
+            border: none;
+            border-radius: 10px;
+            background: #fff;
+            color: #111;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #ddd;
+        }
+
+        .section {
+            margin-top: 25px;
+        }
+
+        .section h2 {
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+
+        .response {
+            min-height: 80px;
+            background: #0d0d0d;
+            border: 1px solid #333;
+            border-radius: 10px;
+            padding: 18px;
+            font-size: 20px;
+        }
+
+        .action {
+            margin-top: 10px;
+            color: #aaa;
+            font-size: 14px;
+        }
+
+        .debug {
+            margin-top: 10px;
+            background: #0d0d0d;
+            border: 1px solid #333;
+            border-radius: 10px;
+            padding: 15px;
+            color: #aaa;
+            font-family: monospace;
+            white-space: pre-wrap;
+            min-height: 60px;
+        }
+
+        .status {
+            margin-top: 15px;
+            font-size: 13px;
+            color: #777;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+
+        <div class="card">
+
+            <h1>Ritter Manager KI</h1>
+
+            <p class="description">
+                KI-Spielsteuerung für Ritter Manager
+            </p>
+
+            <div class="input-area">
+
+                <input
+                    type="text"
+                    id="input"
+                    placeholder="Sag etwas zu Ritter Manager..."
+                    autocomplete="off"
+                >
+
+                <button onclick="sendMessage()">
+                    Senden
+                </button>
+
+            </div>
+
+            <div class="section">
+
+                <h2>KI-Antwort</h2>
+
+                <div class="response" id="response">
+                    
+                </div>
+
+                <div class="action" id="action">
+                    Keine Aktion
+                </div>
+
+            </div>
+
+            <div class="section">
+
+                <h2>Debug</h2>
+
+                <div class="debug" id="debug">
+                    Noch keine Anfrage.
+                </div>
+
+            </div>
+
+            <div class="status" id="status">
+                Bereit
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <script>
+
+        const input = document.getElementById("input");
+        const response = document.getElementById("response");
+        const action = document.getElementById("action");
+        const debug = document.getElementById("debug");
+        const status = document.getElementById("status");
+
+
+        async function sendMessage() {
+
+            const text = input.value.trim();
+
+            if (!text) {
+                return;
+            }
+
+            status.textContent = "KI verarbeitet...";
+
+            response.textContent = "";
+            action.textContent = "Wird verarbeitet...";
+
+            try {
+
+                const result = await fetch("/api/decide", {
+
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+
+                    body: JSON.stringify({
+                        text: text
+                    })
+
+                });
+
+
+                if (!result.ok) {
+                    throw new Error("Serverfehler");
+                }
+
+
+                const data = await result.json();
+
+
+                /*
+                 * KI-Antwort
+                 */
+
+                response.textContent = data.speak || "";
+
+
+                /*
+                 * Ausgeführte Aktion
+                 */
+
+                if (data.action) {
+
+                    action.textContent =
+                        "Aktion: " + data.action;
+
+                } else {
+
+                    action.textContent =
+                        "Keine Aktion";
+
+                }
+
+
+                /*
+                 * Debug-Informationen
+                 */
+
+                debug.textContent =
+                    JSON.stringify(data, null, 2);
+
+
+                status.textContent = "Bereit";
+
+
+            } catch (error) {
+
+                response.textContent =
+                    "Keine Verbindung zum KI-Server.";
+
+                action.textContent =
+                    "Keine Aktion";
+
+                debug.textContent =
+                    error.message;
+
+                status.textContent =
+                    "Server nicht erreichbar";
+
+            }
+
+        }
+
+
+        /*
+         * Enter-Taste
+         */
+
+        input.addEventListener("keydown", function(event) {
+
+            if (event.key === "Enter") {
+
+                sendMessage();
+
+            }
+
+        });
+
+    </script>
+
+</body>
+</html>
